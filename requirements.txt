@@ -1,0 +1,8 @@
+ipykernel    
+tiktoken
+transformers
+datasets
+ipywidgets
+tqdm
+nltk
+numpy
