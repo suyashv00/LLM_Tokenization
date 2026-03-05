@@ -6,3 +6,4 @@ ipywidgets
 tqdm
 nltk
 numpy
+regex
