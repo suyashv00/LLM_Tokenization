@@ -1,24 +1,26 @@
 # 🧬 Medical BPE Tokenizer — From Scratch
 
-A **Byte Pair Encoding (BPE)** tokenizer built from scratch, specifically designed for **biomedical and clinical text** using the [PubMed Summarization](https://huggingface.co/datasets/ccdv/pubmed-summarization) dataset.
+A **Byte Pair Encoding (BPE)** tokenizer built from scratch, specifically designed for **medical text** using the [PubMed Summarization](https://huggingface.co/datasets/ccdv/pubmed-summarization) dataset.
 
 > *"Tokenization is at the heart of much weirdness of LLMs. Do not brush it off."* — Andrej Karpathy
 
 ![Tokenization reference](reference.png)
 
+> **Note:** This is an experimental/learning project. The tokenizer was trained on a **small sample (~10%)** of the PubMed dataset to explore domain-specific BPE. With a larger corpus, we'd expect significantly better compression and vocabulary coverage for medical terminology.
+
 ---
 
 ## 🎯 Why a Medical Tokenizer?
 
-General-purpose tokenizers (GPT-2, GPT-4) are trained on web text and **waste tokens** on medical terminology. A domain-adapted tokenizer means **better compression**, **fewer tokens per document**, and **more efficient LLM training** on medical data.
+General-purpose tokenizer are trained on web text and **waste tokens** on medical terminology. A domain-adapted tokenizer means **better compression**, **fewer tokens per document**, and **more efficient LLM training** on medical data.
 
-**Example:** The word "gastrointestinal" takes 3 tokens in GPT-2 but just 1 token in our medical tokenizer.
+**Example:** The word "gastrointestinal" takes 3 tokens in general tokenizer but just 1 token in our medical tokenizer.
 
 ---
 
 ## ✨ Key Features
 
-- **Medical-aware pretokenization regex** — preserves `IL-6`, `COVID-19`, `BRCA1`, `HbA1c`, `25mg`, `0.05` as atomic units
+- **Medical-aware pretokenization regex** — preserves medical terms as atomic units
 - **Greek letter & symbol normalization** — `α → alpha`, `β → beta`, `± → +/-`, `≥ → >=`
 - **LaTeX & HTML entity cleanup** — strips LaTeX commands, decodes HTML entities
 - **Data quality filtering** — rejects DNA/protein sequences, requires medical keyword presence
@@ -32,16 +34,12 @@ General-purpose tokenizers (GPT-2, GPT-4) are trained on web text and **waste to
 
 ```
 ├── tokenization.ipynb            # Main BPE pipeline: pretokenize → train → encode/decode
-├── tokenization_types.ipynb      # Educational: word vs char vs subword tokenization
+├── tokenization_types.ipynb      # word vs char vs subword tokenization
 ├── results/
-│   ├── vocab.json                # 32,000-token vocabulary (human-readable)
-│   ├── merges.json               # Ordered merge rules (human-readable)
 │   ├── vocab.pkl                 # Vocab in pickle format (fast loading)
 │   └── merges.pkl                # Merges in pickle format (fast loading)
 ├── input.txt                     # Sample text for prototyping
-├── References.txt                # Learning resources & references
 ├── requirements.txt              # Python dependencies
-└── reference.png                 # Karpathy's tokenization importance slide
 ```
 
 ---
@@ -88,6 +86,21 @@ print(ids)
 text = tokenizer.decode(ids)
 print(text)
 ```
+
+---
+
+## ⚡ Optimization Journey
+
+The BPE training algorithm went through several iterations:
+
+| Approach | Description | Limitation |
+|---|---|---|
+| **Naive** | Scan all pairs every merge | O(n) per merge — too slow for large corpus |
+| **Incremental pairs** | Only recount affected pairs | Still rescans too many words |
+| **Inverted index** | `pair_to_words` maps pairs → word IDs | Fast lookup, but finding best pair is O(pairs) |
+| **Heap + inverted index** ✅ | Max-heap with lazy deletion + compaction | O(log n) best-pair lookup — final approach |
+
+The final approach trains **31,743 merges in ~3 minutes** on 200 MB of text.
 
 ---
 
@@ -156,6 +169,17 @@ It also includes a comparison with OpenAI's `tiktoken` library.
 | Initial vocab | 257 (256 bytes + 1 special token) |
 | Final vocab | 32,000 tokens |
 | Merges performed | 31,743 |
+
+## 🔮 Future Scope
+
+This was an experimental project to understand BPE internals. Potential improvements:
+
+- **Train on the full PubMed corpus** (~2 GB+) instead of the 10% sample — expect significantly better medical term coverage and compression
+- **Add evaluation benchmarks** — compression ratio and fertility comparisons against GPT-2/GPT-4 tokenizers on held-out medical text
+- **Expand to other domains** — legal, financial, or scientific text
+- **Integrate with a downstream model** — test whether domain-specific tokens actually improve fine-tuning performance
+
+---
 
 ## 🔗 References & Acknowledgments
 
