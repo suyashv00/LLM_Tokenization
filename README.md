@@ -6,7 +6,7 @@ A **Byte Pair Encoding (BPE)** tokenizer built from scratch, specifically design
 
 ![Tokenization reference](reference.png)
 
-> **Note:** This is an experimental/learning project. The tokenizer was trained on a **small sample (~10%)** of the PubMed dataset to explore domain-specific BPE. With a larger corpus, we'd expect significantly better compression and vocabulary coverage for medical terminology.
+> **Note:** This is an experimental project. The tokenizer was trained on a **small sample** of the PubMed dataset to explore domain-specific BPE. With a larger corpus, we'd expect significantly better compression and vocabulary coverage for medical terminology.
 
 ---
 
@@ -33,13 +33,14 @@ General-purpose tokenizer are trained on web text and **waste tokens** on medica
 ## 📁 Project Structure
 
 ```
-├── tokenization.ipynb            # Main BPE pipeline: pretokenize → train → encode/decode
+├── medical_tokenizer.py          #tokenizer code
+├── medical_tokenizer.ipynb       # Notebook
 ├── tokenization_types.ipynb      # word vs char vs subword tokenization
 ├── results/
-│   ├── vocab.pkl                 # Vocab in pickle format (fast loading)
-│   └── merges.pkl                # Merges in pickle format (fast loading)
-├── input.txt                     # Sample text for prototyping
-├── requirements.txt              # Python dependencies
+│   ├── vocab.pkl            
+│   ├── merges.pkl            
+├── input.txt                    
+├── requirements.txt      
 ```
 
 ---
@@ -55,6 +56,7 @@ pip install -r requirements.txt
 ### 1. Generate the Corpus (one-time)
 
 ```python
+from medical_tokenizer import *
 from datasets import load_dataset
 
 ds = load_dataset("ccdv/pubmed-summarization", split="train[:10%]")
@@ -66,6 +68,8 @@ This downloads ~10% of PubMed abstracts, filters out non-medical content (DNA se
 ### 2. Train the Tokenizer
 
 ```python
+from medical_tokenizer import *
+
 vocab, merges = train_medical_bpe_tokenizer(
     input_path="pubmed_filtered_corpus.txt",
     vocab_size=32_000,
@@ -76,6 +80,8 @@ vocab, merges = train_medical_bpe_tokenizer(
 ### 3. Use the Tokenizer
 
 ```python
+from medical_tokenizer import *
+
 tokenizer = MedicalBPETokenizer("./results")
 
 # Encode
@@ -113,51 +119,36 @@ PubMed Dataset
     │
     ▼
 ┌──────────────────────┐
-│  Data Filtering      │  DNA/protein rejection, medical keyword gate
-│  Text Normalization  │  Greek letters, symbols, LaTeX, HTML
+│  Data Filtering      │  
+│  Text Normalization  │ 
 └──────────────────────┘
     │
     ▼
 ┌──────────────────────┐
 │  Pretokenization     │  Medical-aware regex splitting
-│  (byte-level)        │  Preserves IL-6, HbA1c, 25mg as units
+│  (byte-level)        │ 
 └──────────────────────┘
     │
     ▼
 ┌──────────────────────┐
 │  BPE Training        │  Heap-based merge loop with inverted index
-│  32,000 merges       │  Compaction ratio for memory efficiency
+│  32,000 merges       │ 
 └──────────────────────┘
     │
     ▼
 ┌──────────────────────┐
 │  Tokenizer Class     │  encode() / decode() with merge ranking
-│  (MedicalBPETokenizer)│ Lossless roundtrip guaranteed
+│  (MedicalBPETokenizer)│
 └──────────────────────┘
 ```
 
-### Medical Pretokenization Regex
-
-The custom regex handles medical-specific patterns that general tokenizers break:
-
-| Pattern | Example | What It Preserves |
-|---|---|---|
-| Alphanumeric IDs | `IL-6`, `p53`, `BRCA1` | Gene/protein names |
-| Dosage units | `25mg`, `0.05mL` | Measurements |
-| Hyphenated terms | `COVID-19`, `HbA1c` | Medical identifiers |
-| Contractions | `don't`, `we'll` | Natural language |
-
----
-
-## 📓 Educational Notebook
+## 📓 Notebook
 
 `tokenization_types.ipynb` demonstrates the three main tokenization approaches:
 
 1. **Word-based** — simple whitespace/regex splitting
 2. **Character-based** — individual character tokens
 3. **Subword-based (BPE)** — the sweet spot between word and character level
-
-It also includes a comparison with OpenAI's `tiktoken` library.
 
 ---
 
@@ -169,17 +160,6 @@ It also includes a comparison with OpenAI's `tiktoken` library.
 | Initial vocab | 257 (256 bytes + 1 special token) |
 | Final vocab | 32,000 tokens |
 | Merges performed | 31,743 |
-
-## 🔮 Future Scope
-
-This was an experimental project to understand BPE internals. Potential improvements:
-
-- **Train on the full PubMed corpus** (~2 GB+) instead of the 10% sample — expect significantly better medical term coverage and compression
-- **Add evaluation benchmarks** — compression ratio and fertility comparisons against GPT-2/GPT-4 tokenizers on held-out medical text
-- **Expand to other domains** — legal, financial, or scientific text
-- **Integrate with a downstream model** — test whether domain-specific tokens actually improve fine-tuning performance
-
----
 
 ## 🔗 References & Acknowledgments
 

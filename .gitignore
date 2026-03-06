@@ -1,1 +1,12 @@
+.gitignore
 pubmed_filtered_corpus.txt
+pyproject.toml
+uv.lock
+.venv/
+References.txt
+.python-version
+Copy/
+.vscode/
+__pycache__/
+tokenization.ipynb
+test_tokenizer.py
