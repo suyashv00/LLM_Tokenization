@@ -1,4 +1,3 @@
-.gitignore
 pubmed_filtered_corpus.txt
 pyproject.toml
 uv.lock
